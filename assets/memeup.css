@@ -1,0 +1,454 @@
+/*
+  memeup — "The Group Chat"
+  Structural + visual layer on top of Dawn. Recolors and reshapes Dawn's own
+  components (cards, buttons, inputs, cart drawer) into chat-bubble grammar,
+  and styles the theme-specific sections added for this brand
+  (meme-chat-hero, meme-composer, status strip, bubble meta).
+*/
+
+/* ---------- Base surface & type ---------- */
+
+body {
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.h0,
+.h1,
+.h2,
+.h3,
+.h4,
+.h5 {
+  font-family: var(--memeup-font-display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+/* Timestamps, SKUs, prices read as "data" set in mono, per the world's
+   read-receipt grammar. */
+.price,
+.product__sku,
+.memeup-mono {
+  font-family: var(--memeup-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--memeup-accent);
+  color: var(--memeup-accent-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--memeup-accent);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select {
+  caret-color: var(--memeup-accent);
+}
+
+/* ---------- Header: "contact card" strip ---------- */
+
+.memeup-status-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-family: var(--memeup-font-mono);
+  font-size: 1.1rem;
+  letter-spacing: 0.02em;
+  color: var(--memeup-muted);
+  border-bottom: 1px solid var(--memeup-border);
+}
+
+.memeup-status-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--memeup-online);
+  box-shadow: 0 0 0 3px rgba(61, 220, 89, 0.18);
+  flex-shrink: 0;
+}
+
+.header {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.header__heading-link {
+  font-family: var(--memeup-font-display);
+}
+
+#cart-icon-bubble .cart-count-bubble {
+  background: var(--memeup-accent);
+  color: var(--memeup-accent-ink);
+  font-family: var(--memeup-font-mono);
+}
+
+/* ---------- Buttons & inputs: bubble affordances ---------- */
+
+.button,
+button.button,
+.product-form__submit {
+  font-family: var(--memeup-font-body);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+  transition:
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.button:hover:not([disabled]),
+button.button:hover:not([disabled]) {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.button:active:not([disabled]) {
+  transform: translateY(0) scale(0.98);
+}
+
+.field__input,
+.select__select,
+.text-area {
+  font-family: var(--memeup-font-body);
+}
+
+/* ---------- Product bubbles: card + grid ---------- */
+
+.card-wrapper .card {
+  border-radius: var(--memeup-radius-bubble);
+  overflow: visible;
+}
+
+.card-wrapper .card__inner,
+.card-wrapper .card__media {
+  border-radius: var(--memeup-radius-bubble);
+  overflow: hidden;
+}
+
+.card-wrapper .card__content {
+  position: relative;
+  padding-top: 0.6rem;
+}
+
+/* Speaker lanes: even cards read as "them" (memeup), odd cards as "you" —
+   alternating like a real thread, with a bubble tail on each. */
+.grid__item:nth-child(odd) .card-wrapper {
+  margin-inline-end: 8%;
+}
+
+.grid__item:nth-child(even) .card-wrapper {
+  margin-inline-start: 8%;
+}
+
+.grid__item:nth-child(even) .card-wrapper .card__inner {
+  box-shadow: inset 0 0 0 2px var(--memeup-accent);
+}
+
+.memeup-bubble-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.4rem;
+  font-family: var(--memeup-font-mono);
+  font-size: 1.1rem;
+  color: var(--memeup-muted);
+}
+
+.memeup-bubble-meta__dot {
+  opacity: 0.6;
+}
+
+.memeup-bubble-meta__signal {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Signature motion: the typing dots ---------- */
+
+.memeup-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  height: 1em;
+}
+
+.memeup-typing span {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  animation: memeup-typing-pulse 1.1s infinite ease-in-out;
+}
+
+.memeup-typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.memeup-typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes memeup-typing-pulse {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memeup-typing span {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+/* ---------- Homepage: the chat thread hero ---------- */
+
+.meme-chat-hero {
+  background: var(--memeup-bg);
+  padding: 3.2rem 0 2.4rem;
+}
+
+.meme-chat-hero__thread {
+  max-width: 62rem;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  padding: 1.2rem 1.6rem;
+  border-radius: var(--memeup-radius-bubble);
+  position: relative;
+  font-size: 1.7rem;
+  line-height: 1.35;
+}
+
+.chat-bubble--them {
+  align-self: flex-start;
+  background: var(--memeup-bubble-them-bg);
+  color: var(--memeup-bubble-them-text);
+  border-bottom-left-radius: var(--memeup-radius-tail);
+}
+
+.chat-bubble--you {
+  align-self: flex-end;
+  background: var(--memeup-bubble-you-bg);
+  color: var(--memeup-bubble-you-text);
+  border-bottom-right-radius: var(--memeup-radius-tail);
+  font-weight: 600;
+}
+
+.chat-bubble__media {
+  display: block;
+  width: 100%;
+  border-radius: calc(var(--memeup-radius-bubble) - 0.6rem);
+  margin-top: 0.6rem;
+  overflow: hidden;
+}
+
+.chat-bubble__media img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chat-bubble__meta {
+  display: block;
+  margin-top: 0.5rem;
+  font-family: var(--memeup-font-mono);
+  font-size: 1.1rem;
+  opacity: 0.6;
+}
+
+.chat-bubble--you .chat-bubble__meta {
+  text-align: right;
+}
+
+.meme-chat-hero__compose {
+  position: sticky;
+  bottom: 1.6rem;
+  margin: 2rem auto 0;
+  max-width: 62rem;
+  padding: 0 2rem;
+}
+
+.memeup-compose-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--memeup-bg-raised);
+  border: 1px solid var(--memeup-border);
+  border-radius: 999px;
+  padding: 0.6rem 0.6rem 0.6rem 1.6rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  text-decoration: none;
+}
+
+.memeup-compose-bar__text {
+  flex: 1;
+  color: var(--memeup-muted);
+  font-family: var(--memeup-font-body);
+  font-size: 1.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memeup-compose-bar__send {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.2rem;
+  height: 4.2rem;
+  border-radius: 50%;
+  background: var(--memeup-accent);
+  color: var(--memeup-accent-ink);
+}
+
+.memeup-compose-bar__send svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+@media screen and (max-width: 749px) {
+  .chat-bubble {
+    max-width: 88%;
+    font-size: 1.6rem;
+  }
+}
+
+/* ---------- Product page: compose-bar buy box ---------- */
+
+.product-form__buttons {
+  gap: 1rem;
+}
+
+.product-form__submit.button--primary {
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.product-form__submit .memeup-send-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  flex-shrink: 0;
+}
+
+@media screen and (max-width: 989px) {
+  .product__info-container > .product-form,
+  .product__info-container > div > .product-form {
+    position: sticky;
+    bottom: 0;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    background: linear-gradient(to top, var(--memeup-bg) 60%, transparent);
+    z-index: 3;
+  }
+}
+
+/* ---------- Cart drawer: the thread ---------- */
+
+.drawer__inner {
+  background: var(--memeup-bg);
+}
+
+.drawer__header {
+  border-bottom: 1px solid var(--memeup-border);
+}
+
+.drawer__heading {
+  font-family: var(--memeup-font-display);
+}
+
+.cart-items thead {
+  display: none;
+}
+
+.cart-items tbody,
+.cart-items tr {
+  display: block;
+  width: 100%;
+}
+
+.cart-item {
+  display: grid !important;
+  grid-template-columns: auto 1fr auto;
+  gap: 0 1.2rem;
+  align-items: start;
+  background: var(--memeup-bubble-them-bg);
+  border-radius: var(--memeup-radius-bubble);
+  border-bottom-left-radius: var(--memeup-radius-tail);
+  padding: 1.2rem 1.4rem;
+  margin: 0 0 1.2rem;
+}
+
+.cart-item__media,
+.cart-item__details,
+.cart-item__totals,
+.cart-item__quantity {
+  display: block;
+  padding: 0 !important;
+}
+
+.cart-item__media {
+  grid-row: 1 / 3;
+}
+
+.cart-item__image {
+  border-radius: var(--memeup-radius-bubble-sm);
+}
+
+.cart-item__quantity {
+  grid-column: 1 / -1;
+  margin-top: 0.6rem;
+}
+
+.cart-item dl .product-option dt,
+.cart-item dl .product-option dd {
+  display: inline;
+  font-family: var(--memeup-font-mono);
+  font-size: 1.2rem;
+  color: var(--memeup-muted);
+}
+
+.cart__ctas .cart__checkout-button {
+  border-radius: 999px;
+}
+
+.drawer__inner-empty .cart__empty-text {
+  font-family: var(--memeup-font-display);
+  font-weight: 400;
+}
+
+/* ---------- Footer ---------- */
+
+.footer {
+  border-top: 1px solid var(--memeup-border);
+}

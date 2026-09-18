@@ -10,3 +10,8 @@ Thumbs.db
 .shopify
 node_modules
 *.zip
+
+# Impeccable local/session cache — .impeccable/surfaces (direction contracts)
+# is committed, this cache is not.
+.impeccable/hook.cache.json
+.impeccable/config.local.json

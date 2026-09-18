@@ -1,0 +1,138 @@
+{% comment %}
+  Mount point for the personalize-your-own-meme-shirt product.
+
+  The actual template picker / caption inputs / live preview widget is built
+  and owned by the sibling `memeup-store` repo (apps/editor), NOT this theme.
+  This section only:
+    1. renders the section chrome in the group-chat visual world (the
+       composer reads as an open message being typed), and
+    2. exposes the mount point + data attributes that repo's build expects.
+
+  To go live: build apps/editor, host apps/editor/dist (or its container),
+  and either enqueue its script/style tags from this section (swap the
+  commented-out example below) or via a `custom_liquid`/`@app` block. Until
+  that script runs, the plain buy button below is a working, accessible
+  fallback (no JS required) — leave it in place rather than deleting it.
+{% endcomment %}
+
+<div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
+  <div class="page-width">
+    <div class="meme-composer">
+      <div class="meme-composer__media">
+        {%- if product.featured_media -%}
+          {{ product.featured_media | image_url: width: 900 | image_tag: loading: 'lazy', widths: '450, 700, 900' }}
+        {%- endif -%}
+      </div>
+
+      <div class="meme-composer__panel">
+        <p class="chat-bubble__meta">memeup &middot; typing a shirt for you</p>
+        <h1 class="product__title">{{ product.title | escape }}</h1>
+        {%- render 'price', product: product, use_variant: true, price_class: 'price--large' -%}
+
+        {%- comment -%} Sibling-app mount point. Data attributes are the
+        contract apps/editor reads at boot (see memeup-store README:
+        VITE_SHOPIFY_VARIANT_ID / VITE_SHOPIFY_VARIANTS). {%- endcomment -%}
+        <div
+          id="memeup-editor-root"
+          class="meme-composer__root"
+          data-product-id="{{ product.id }}"
+          data-product-handle="{{ product.handle }}"
+        ></div>
+
+        {%- comment -%}
+        <script type="module" src="https://YOUR-EDITOR-HOST/assets/index.js" defer></script>
+        <link rel="stylesheet" href="https://YOUR-EDITOR-HOST/assets/index.css">
+        {%- endcomment -%}
+
+        <div class="meme-composer__fallback">
+          <p class="memeup-bubble-meta">no editor loaded yet &mdash; plain add-to-cart works below</p>
+          {%- render 'buy-buttons',
+            product: product,
+            product_form_id: 'meme-composer-form',
+            section_id: section.id,
+            show_pickup_availability: false
+          -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top }}px;
+    padding-bottom: {{ section.settings.padding_bottom }}px;
+  }
+
+  .meme-composer {
+    display: grid;
+    gap: 3rem;
+    grid-template-columns: 1fr;
+  }
+
+  @media screen and (min-width: 750px) {
+    .meme-composer {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
+  .meme-composer__media img {
+    width: 100%;
+    border-radius: var(--memeup-radius-bubble);
+    display: block;
+  }
+
+  .meme-composer__panel {
+    background: var(--memeup-bubble-them-bg);
+    border-radius: var(--memeup-radius-bubble);
+    border-top-left-radius: var(--memeup-radius-tail);
+    padding: 2.4rem;
+  }
+
+  .meme-composer__root {
+    min-height: 12rem;
+  }
+
+  .meme-composer__fallback {
+    margin-top: 1.6rem;
+    padding-top: 1.6rem;
+    border-top: 1px dashed var(--memeup-border);
+  }
+{%- endstyle -%}
+
+{% schema %}
+{
+  "name": "Meme composer",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 36
+    }
+  ]
+}
+{% endschema %}

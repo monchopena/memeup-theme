@@ -1,0 +1,22 @@
+{% comment %}
+  Renders a chat-style meta line above a product card's title: a "sent Xm
+  ago" timestamp plus a rotating social/stock signal. Decorative flavor for
+  the group-chat world — aria-hidden so screen readers hear only the real
+  title and price. Deterministic per product id (no layout shift, no random
+  seed needed) so it's stable between renders; wire to real analytics or
+  remove once real content/data exists.
+
+  Accepts:
+  - product: {Object} Product Liquid object
+{% endcomment %}
+{%- liquid
+  assign signals = 'seen by 1.2k|read by 3.4k|screenshotted 89x|sent to the group chat|going around rn' | split: '|'
+  assign signal_index = product.id | modulo: signals.size
+  assign signal = signals[signal_index]
+  assign minutes = product.id | modulo: 58 | plus: 2
+-%}
+<p class="memeup-bubble-meta" aria-hidden="true">
+  <span class="memeup-bubble-meta__time">{{ minutes }}m</span>
+  <span class="memeup-bubble-meta__dot">&middot;</span>
+  <span class="memeup-bubble-meta__signal">{{ signal }}</span>
+</p>

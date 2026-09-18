@@ -1,0 +1,43 @@
+/*
+  memeup design tokens — "The Group Chat" world.
+  Loaded after base.css so these override Dawn's settings-driven
+  :root variables (font families) while colors are also set natively
+  via config/settings_data.json color_schemes.
+*/
+:root {
+  /* Surfaces */
+  --memeup-bg: #0c0c10;
+  --memeup-bg-raised: #16161c;
+  --memeup-border: rgba(255, 255, 255, 0.09);
+
+  /* Bubbles */
+  --memeup-bubble-them-bg: #1e1e26;
+  --memeup-bubble-them-text: #f5f5f7;
+  --memeup-bubble-you-bg: #c6ff3d;
+  --memeup-bubble-you-text: #0b1f06;
+
+  /* Ink */
+  --memeup-ink: #f5f5f7;
+  --memeup-muted: #9a9aa6;
+  --memeup-accent: #c6ff3d;
+  --memeup-accent-ink: #0b1f06;
+  --memeup-online: #3ddc59;
+  --memeup-urgent: #ff5470;
+
+  /* Radii */
+  --memeup-radius-bubble: 22px;
+  --memeup-radius-bubble-sm: 14px;
+  --memeup-radius-tail: 6px;
+
+  /* Fonts */
+  --memeup-font-display: 'Bagel Fat One', ui-rounded, system-ui, sans-serif;
+  --memeup-font-body: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --memeup-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --memeup-font-meme: 'Anton', Impact, sans-serif;
+
+  /* Override Dawn's font-family variables so every heading/body element
+     in the inherited component library picks up the committed world. */
+  --font-body-family: var(--memeup-font-body), sans-serif;
+  --font-heading-family: var(--memeup-font-display), sans-serif;
+  --font-heading-weight: 400;
+}

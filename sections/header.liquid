@@ -148,6 +148,10 @@
   {% endif %}
   class="header-wrapper color-{{ section.settings.color_scheme }} gradient{% if section.settings.show_line_separator %} header-wrapper--border-bottom{% endif %}"
 >
+  <div class="memeup-status-strip" aria-hidden="true">
+    <span class="memeup-status-dot"></span>
+    <span class="memeup-status-text">online now · typically ships a shirt in seconds</span>
+  </div>
   {%- liquid
     assign social_links = false
     if settings.social_twitter_link != blank or settings.social_facebook_link != blank or settings.social_pinterest_link != blank or settings.social_instagram_link != blank or settings.social_youtube_link != blank or settings.social_vimeo_link != blank or settings.social_tiktok_link != blank or settings.social_tumblr_link != blank or settings.social_snapchat_link != blank

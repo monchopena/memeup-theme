@@ -1,0 +1,177 @@
+{% comment %}
+  memeup homepage hero: the storefront's first viewport styled as a live
+  group-chat thread. Each block is one message bubble; the section ends
+  with a persistent compose-bar CTA into the personalize flow.
+{% endcomment %}
+
+<div class="meme-chat-hero color-{{ section.settings.color_scheme }} gradient">
+  <div class="meme-chat-hero__thread">
+    {%- for block in section.blocks -%}
+      {%- case block.type -%}
+        {%- when 'message' -%}
+          <div
+            class="chat-bubble chat-bubble--{{ block.settings.side }}{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+            {{ block.shopify_attributes }}
+          >
+            {%- if block.settings.text != blank -%}
+              <span>{{ block.settings.text }}</span>
+            {%- endif -%}
+            {%- if block.settings.image != blank -%}
+              <span class="chat-bubble__media">
+                {{
+                  block.settings.image
+                  | image_url: width: 800
+                  | image_tag: loading: 'lazy', widths: '400, 600, 800'
+                }}
+              </span>
+            {%- endif -%}
+            {%- if block.settings.meta != blank -%}
+              <span class="chat-bubble__meta">{{ block.settings.meta }}</span>
+            {%- endif -%}
+          </div>
+        {%- when 'typing' -%}
+          <div
+            class="chat-bubble chat-bubble--{{ block.settings.side }}{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+            {{ block.shopify_attributes }}
+          >
+            <span class="memeup-typing" role="status" aria-label="{{ block.settings.label | escape }}">
+              <span></span><span></span><span></span>
+            </span>
+          </div>
+      {%- endcase -%}
+    {%- endfor -%}
+  </div>
+
+  {%- if section.settings.compose_text != blank -%}
+    <div class="meme-chat-hero__compose">
+      <a href="{{ section.settings.compose_link }}" class="memeup-compose-bar">
+        <span class="memeup-compose-bar__text">{{ section.settings.compose_text }}</span>
+        <span class="memeup-compose-bar__send" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 2 11 13" />
+            <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+          </svg>
+        </span>
+      </a>
+    </div>
+  {%- endif -%}
+</div>
+
+{% schema %}
+{
+  "name": "Meme chat hero",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "text",
+      "id": "compose_text",
+      "label": "Compose bar text",
+      "default": "start your own meme…"
+    },
+    {
+      "type": "url",
+      "id": "compose_link",
+      "label": "Compose bar link"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "message",
+      "name": "Message bubble",
+      "settings": [
+        {
+          "type": "select",
+          "id": "side",
+          "label": "Sender",
+          "options": [
+            { "value": "them", "label": "memeup (left)" },
+            { "value": "you", "label": "you (right)" }
+          ],
+          "default": "them"
+        },
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Message text"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image (e.g. a meme shirt)"
+        },
+        {
+          "type": "text",
+          "id": "meta",
+          "label": "Meta line (e.g. \"read · 2m\")"
+        }
+      ]
+    },
+    {
+      "type": "typing",
+      "name": "Typing indicator",
+      "settings": [
+        {
+          "type": "select",
+          "id": "side",
+          "label": "Sender",
+          "options": [
+            { "value": "them", "label": "memeup (left)" },
+            { "value": "you", "label": "you (right)" }
+          ],
+          "default": "them"
+        },
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Accessible label",
+          "default": "memeup is typing"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Meme chat hero",
+      "blocks": [
+        {
+          "type": "message",
+          "settings": {
+            "side": "them",
+            "text": "we just dropped 6 new shirts and they're all unhinged",
+            "meta": "read · 2m"
+          }
+        },
+        {
+          "type": "message",
+          "settings": {
+            "side": "you",
+            "text": "shut up and take my money",
+            "meta": "delivered"
+          }
+        },
+        {
+          "type": "message",
+          "settings": {
+            "side": "them",
+            "text": "or… you make your own. type a caption, we print it, you wear it.",
+            "meta": "read · just now"
+          }
+        },
+        {
+          "type": "typing",
+          "settings": {
+            "side": "you"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
