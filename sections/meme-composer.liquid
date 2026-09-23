@@ -1,26 +1,25 @@
 {% comment %}
-  Mount point for the personalize-your-own-meme-shirt product.
+  Personalize-your-own-meme-shirt product page: the whole meme generator,
+  built into the theme (assets/meme-maker.js + meme-maker.css).
 
-  The template picker / caption inputs / live preview widget is built and
-  owned by the sibling `memeup-store` repo (apps/editor), NOT this theme.
-  This section only:
-    1. renders the section chrome in the group-chat visual world, and
-    2. exposes the mount point + data attributes apps/editor reads at boot:
-       - data-variants:  JSON "<SIZE>|<color>" -> variant id, built from this
-                         product's own variants (so ids never need baking
-                         into the editor build)
-       - data-templates: comma-separated memegen template ids to offer. Only
-                         list ids that have a high-res source in the API's
-                         TEMPLATES_DIR, or the print render will fail.
-    3. loads the editor script/style from `editor_js_url` / `editor_css_url`.
+  Flow: pick a memegen template -> type top/bottom captions -> live preview
+  (memegen, preview quality only) -> pick size/colour -> "Add to cart":
+    1. POST {api_url}/designs renders the 300 DPI print file and returns its
+       public printFileUrl (memeup-store apps/api).
+    2. POST /cart/add.js with line-item properties templateId, topText,
+       bottomText, printFileUrl, size, color: the exact keys the API's
+       orders/create webhook reads to send the order to Gelato.
 
-  Until the editor script mounts, the plain buy button below stays visible as
-  an accessible fallback; it hides itself once the editor renders.
+  Sizes/colours come from this product's own variants. The API accepts sizes
+  S M L XL XXL and colours white/black, so name the product's options that way.
 {% endcomment %}
 
+{{ 'meme-maker.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'meme-maker.js' | asset_url }}" defer="defer"></script>
+
 {%- liquid
-  assign size_index = 0
-  assign color_index = 1
+  assign size_index = -1
+  assign color_index = -1
   for option in product.options_with_values
     assign option_name = option.name | downcase
     if option_name contains 'size' or option_name contains 'talla'
@@ -29,146 +28,159 @@
       assign color_index = forloop.index0
     endif
   endfor
+  assign current = product.selected_or_first_available_variant
 -%}
 {%- capture variants_json -%}
-  {
+  [
   {%- for variant in product.variants -%}
-    "{{ variant.options[size_index] | upcase }}|{{ variant.options[color_index] | downcase }}":"{{ variant.id }}"
+    {
+      "id": {{ variant.id }},
+      "available": {{ variant.available | json }},
+      "size": {% if size_index >= 0 %}{{ variant.options[size_index] | json }}{% else %}null{% endif %},
+      "color": {% if color_index >= 0 %}{{ variant.options[color_index] | json }}{% else %}null{% endif %}
+    }
     {%- unless forloop.last %},{% endunless -%}
   {%- endfor -%}
-  }
+  ]
 {%- endcapture -%}
-{%- assign has_editor = false -%}
-{%- if section.settings.editor_js_url != blank -%}
-  {%- assign has_editor = true -%}
-{%- endif -%}
 
 <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
   <div class="page-width">
-    <div class="meme-composer{% if has_editor %} meme-composer--editor{% endif %}">
-      {%- unless has_editor -%}
-        <div class="meme-composer__media">
-          {%- if product.featured_media -%}
-            {{ product.featured_media | image_url: width: 900 | image_tag: loading: 'lazy', widths: '450, 700, 900' }}
-          {%- endif -%}
+    <meme-maker
+      class="meme-maker"
+      data-memegen-url="{{ section.settings.memegen_url | escape }}"
+      data-api-url="{{ section.settings.api_url | escape }}"
+      data-templates="{{ section.settings.template_ids | escape }}"
+      data-variants="{{ variants_json | strip | escape }}"
+    >
+      <div class="meme-maker__stage">
+        <div
+          class="meme-maker__shirt"
+          data-shirt
+          {% if color_index >= 0 %}
+            data-shirt-color="{{ current.options[color_index] | downcase | escape }}"
+          {% endif %}
+        >
+          <img class="meme-maker__preview" data-preview alt="" width="700" height="700" hidden>
+          <p class="meme-maker__placeholder" data-placeholder>pick a meme to start &rarr;</p>
         </div>
-      {%- endunless -%}
+        <p class="memeup-bubble-meta">preview only &middot; your shirt is printed from a 300 dpi file</p>
+      </div>
 
-      <div class="meme-composer__panel" id="create">
+      <div class="meme-maker__panel" id="create">
         <p class="chat-bubble__meta">memeup &middot; typing a shirt for you</p>
         <h1 class="product__title">{{ product.title | escape }}</h1>
         {%- render 'price', product: product, use_variant: true, price_class: 'price--large' -%}
 
-        <div
-          id="meme-editor-root"
-          class="meme-composer__root"
-          data-product-id="{{ product.id }}"
-          data-product-handle="{{ product.handle }}"
-          data-variant-id="{{ product.selected_or_first_available_variant.id }}"
-          data-variants="{{ variants_json | strip | escape }}"
-          data-templates="{{ section.settings.template_ids | escape }}"
-        ></div>
-
-        <div class="meme-composer__fallback">
-          {%- if has_editor -%}
-            <p class="memeup-bubble-meta">loading the meme editor&hellip;</p>
-          {%- else -%}
-            <p class="memeup-bubble-meta">no editor loaded yet &mdash; plain add-to-cart works below</p>
-            {%- render 'buy-buttons',
-              product: product,
-              product_form_id: 'meme-composer-form',
-              section_id: section.id,
-              show_pickup_availability: false
-            -%}
-          {%- endif -%}
+        <div class="meme-maker__step">
+          <h2 class="meme-maker__label"><span>01</span> pick a meme</h2>
+          <input
+            class="meme-maker__search"
+            type="search"
+            data-search
+            placeholder="search memes…"
+            aria-label="Search memes"
+            hidden
+          >
+          <div class="meme-maker__templates" data-templates-grid role="group" aria-label="Meme templates">
+            <p class="memeup-bubble-meta">loading memes&hellip;</p>
+          </div>
         </div>
+
+        <div class="meme-maker__step">
+          <h2 class="meme-maker__label"><span>02</span> write your caption</h2>
+          <label class="meme-maker__field">
+            <span>top text</span>
+            <input type="text" data-top maxlength="120" autocomplete="off" placeholder="when the shirt">
+          </label>
+          <label class="meme-maker__field">
+            <span>bottom text</span>
+            <input type="text" data-bottom maxlength="120" autocomplete="off" placeholder="is the meme">
+          </label>
+        </div>
+
+        <div class="meme-maker__step">
+          <h2 class="meme-maker__label"><span>03</span> pick your shirt</h2>
+          {%- for option in product.options_with_values -%}
+            {%- if forloop.index0 == size_index or forloop.index0 == color_index -%}
+              {%- liquid
+                if forloop.index0 == size_index
+                  assign option_key = 'size'
+                else
+                  assign option_key = 'color'
+                endif
+              -%}
+              <fieldset class="meme-maker__options">
+                <legend>{{ option.name | escape }}</legend>
+                {%- for value in option.values -%}
+                  <label class="meme-maker__pill">
+                    <input
+                      type="radio"
+                      name="{{ section.id }}-{{ option_key }}"
+                      value="{{ value | escape }}"
+                      data-option="{{ option_key }}"
+                      {% if option.selected_value == value %}
+                        checked
+                      {% endif %}
+                    >
+                    <span>
+                      {%- if option_key == 'color' -%}
+                        <i class="meme-maker__swatch" style="--swatch: {{ value | downcase | escape }}"></i>
+                      {%- endif -%}
+                      {{- value | escape -}}
+                    </span>
+                  </label>
+                {%- endfor -%}
+              </fieldset>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+
+        <button type="button" class="button button--primary meme-maker__submit" data-submit disabled>
+          add to cart
+        </button>
+        <p class="meme-maker__status" data-status role="status" aria-live="polite"></p>
+
+        <noscript>
+          <p class="meme-maker__status is-error">
+            The meme maker needs JavaScript. Turn it on to design your shirt.
+          </p>
+        </noscript>
       </div>
-    </div>
+    </meme-maker>
   </div>
 </div>
-
-{%- if has_editor -%}
-  {%- if section.settings.editor_css_url != blank -%}
-    <link rel="stylesheet" href="{{ section.settings.editor_css_url }}" crossorigin="anonymous">
-  {%- endif -%}
-  <script type="module" src="{{ section.settings.editor_js_url }}" crossorigin="anonymous"></script>
-{%- endif -%}
 
 {%- style -%}
   .section-{{ section.id }}-padding {
     padding-top: {{ section.settings.padding_top }}px;
     padding-bottom: {{ section.settings.padding_bottom }}px;
   }
-
-  .meme-composer {
-    display: grid;
-    gap: 3rem;
-    grid-template-columns: 1fr;
-  }
-
-  @media screen and (min-width: 750px) {
-    .meme-composer:not(.meme-composer--editor) {
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
-    }
-  }
-
-  .meme-composer__media img {
-    width: 100%;
-    border-radius: var(--memeup-radius-bubble);
-    display: block;
-  }
-
-  .meme-composer__panel {
-    background: var(--memeup-bubble-them-bg);
-    border-radius: var(--memeup-radius-bubble);
-    border-top-left-radius: var(--memeup-radius-tail);
-    padding: 2.4rem;
-  }
-
-  #create {
-    scroll-margin-top: 2rem;
-  }
-
-  .meme-composer__root:not(:empty) {
-    margin-top: 2rem;
-  }
-
-  .meme-composer__fallback {
-    margin-top: 1.6rem;
-    padding-top: 1.6rem;
-    border-top: 1px dashed var(--memeup-border);
-  }
-
-  .meme-composer__root:not(:empty) ~ .meme-composer__fallback {
-    display: none;
-  }
 {%- endstyle -%}
 
 {% schema %}
 {
-  "name": "Meme composer",
+  "name": "Meme maker",
   "tag": "section",
   "class": "section",
   "settings": [
     {
-      "type": "text",
-      "id": "editor_js_url",
-      "label": "Editor script URL",
-      "info": "apps/editor build from memeup-store, e.g. https://store.moncho.cloud/assets/editor.js. Leave empty to show the plain buy button.",
-      "default": "https://store.moncho.cloud/assets/editor.js"
-    },
-    {
-      "type": "text",
-      "id": "editor_css_url",
-      "label": "Editor stylesheet URL",
-      "default": "https://store.moncho.cloud/assets/editor.css"
-    },
-    {
       "type": "textarea",
       "id": "template_ids",
-      "label": "Meme templates offered",
-      "info": "Comma-separated memegen template ids (e.g. drake,doge,buzz). Each needs a high-res file on the API. Empty = all memegen templates."
+      "label": "Memes offered",
+      "info": "Comma-separated memegen template ids, in display order (e.g. drake,doge,buzz). Each needs a high-res file on the API: check with `pnpm check-templates`. Empty = every memegen template."
+    },
+    {
+      "type": "text",
+      "id": "memegen_url",
+      "label": "Memegen URL (previews)",
+      "default": "https://store-memegen.moncho.cloud"
+    },
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "memeup API URL (print files)",
+      "default": "https://store-api.moncho.cloud"
     },
     {
       "type": "color_scheme",

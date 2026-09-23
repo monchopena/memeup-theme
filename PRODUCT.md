@@ -39,16 +39,15 @@ else's finished design. Generic "funny shirt" competitors only offer path 1.
 - **Ready-made products** are normal Shopify products/variants, listed and
   fulfilled automatically by Gelato's native Shopify sales-channel app.
   Standard product/collection browsing applies to these.
-- **The personalized product** is served by a separate sibling repo
-  (`memeup-store`, not this one): a React widget (meme-template picker,
-  top/bottom caption inputs, live preview, "add to cart") that must be
-  embedded into a section/block on that one product's page. It calls a
-  self-hosted meme-template service for preview images and its own API to
-  render the final 300 DPI print file, then adds to cart via Shopify's AJAX
-  cart (`/cart/add.js`) with line-item properties (`templateId`, `topText`,
-  `bottomText`, `printFileUrl`, size, color). This theme repo owns the mount
-  point/section and surrounding page chrome for that product — not the
-  widget's internals.
+- **The personalized product** uses the `product.memeup-personalize`
+  template, whose "Meme maker" section (`sections/meme-composer.liquid` +
+  `assets/meme-maker.js`) is the whole generator, built into this theme:
+  template picker, top/bottom captions, live memegen preview on a shirt
+  mock-up, size/colour from the product's own variants. "Add to cart" calls
+  the sibling `memeup-store` API (`POST /designs`) to render the 300 DPI print
+  file, then `/cart/add.js` with line-item properties (`templateId`,
+  `topText`, `bottomText`, `printFileUrl`, `size`, `color`) that the API's
+  `orders/create` webhook reads to create the Gelato order.
 - Because the personalized product's cart line carries custom properties, the
   cart and cart drawer need to render them legibly (template/caption), not
   just title, variant and price.
