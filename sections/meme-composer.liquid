@@ -1,62 +1,98 @@
 {% comment %}
   Mount point for the personalize-your-own-meme-shirt product.
 
-  The actual template picker / caption inputs / live preview widget is built
-  and owned by the sibling `memeup-store` repo (apps/editor), NOT this theme.
+  The template picker / caption inputs / live preview widget is built and
+  owned by the sibling `memeup-store` repo (apps/editor), NOT this theme.
   This section only:
-    1. renders the section chrome in the group-chat visual world (the
-       composer reads as an open message being typed), and
-    2. exposes the mount point + data attributes that repo's build expects.
+    1. renders the section chrome in the group-chat visual world, and
+    2. exposes the mount point + data attributes apps/editor reads at boot:
+       - data-variants:  JSON "<SIZE>|<color>" -> variant id, built from this
+                         product's own variants (so ids never need baking
+                         into the editor build)
+       - data-templates: comma-separated memegen template ids to offer. Only
+                         list ids that have a high-res source in the API's
+                         TEMPLATES_DIR, or the print render will fail.
+    3. loads the editor script/style from `editor_js_url` / `editor_css_url`.
 
-  To go live: build apps/editor, host apps/editor/dist (or its container),
-  and either enqueue its script/style tags from this section (swap the
-  commented-out example below) or via a `custom_liquid`/`@app` block. Until
-  that script runs, the plain buy button below is a working, accessible
-  fallback (no JS required) — leave it in place rather than deleting it.
+  Until the editor script mounts, the plain buy button below stays visible as
+  an accessible fallback; it hides itself once the editor renders.
 {% endcomment %}
+
+{%- liquid
+  assign size_index = 0
+  assign color_index = 1
+  for option in product.options_with_values
+    assign option_name = option.name | downcase
+    if option_name contains 'size' or option_name contains 'talla'
+      assign size_index = forloop.index0
+    elsif option_name contains 'colo'
+      assign color_index = forloop.index0
+    endif
+  endfor
+-%}
+{%- capture variants_json -%}
+  {
+  {%- for variant in product.variants -%}
+    "{{ variant.options[size_index] | upcase }}|{{ variant.options[color_index] | downcase }}":"{{ variant.id }}"
+    {%- unless forloop.last %},{% endunless -%}
+  {%- endfor -%}
+  }
+{%- endcapture -%}
+{%- assign has_editor = false -%}
+{%- if section.settings.editor_js_url != blank -%}
+  {%- assign has_editor = true -%}
+{%- endif -%}
 
 <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
   <div class="page-width">
-    <div class="meme-composer">
-      <div class="meme-composer__media">
-        {%- if product.featured_media -%}
-          {{ product.featured_media | image_url: width: 900 | image_tag: loading: 'lazy', widths: '450, 700, 900' }}
-        {%- endif -%}
-      </div>
+    <div class="meme-composer{% if has_editor %} meme-composer--editor{% endif %}">
+      {%- unless has_editor -%}
+        <div class="meme-composer__media">
+          {%- if product.featured_media -%}
+            {{ product.featured_media | image_url: width: 900 | image_tag: loading: 'lazy', widths: '450, 700, 900' }}
+          {%- endif -%}
+        </div>
+      {%- endunless -%}
 
-      <div class="meme-composer__panel">
+      <div class="meme-composer__panel" id="create">
         <p class="chat-bubble__meta">memeup &middot; typing a shirt for you</p>
         <h1 class="product__title">{{ product.title | escape }}</h1>
         {%- render 'price', product: product, use_variant: true, price_class: 'price--large' -%}
 
-        {%- comment -%} Sibling-app mount point. Data attributes are the
-        contract apps/editor reads at boot (see memeup-store README:
-        VITE_SHOPIFY_VARIANT_ID / VITE_SHOPIFY_VARIANTS). {%- endcomment -%}
         <div
-          id="memeup-editor-root"
+          id="meme-editor-root"
           class="meme-composer__root"
           data-product-id="{{ product.id }}"
           data-product-handle="{{ product.handle }}"
+          data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+          data-variants="{{ variants_json | strip | escape }}"
+          data-templates="{{ section.settings.template_ids | escape }}"
         ></div>
 
-        {%- comment -%}
-        <script type="module" src="https://YOUR-EDITOR-HOST/assets/index.js" defer></script>
-        <link rel="stylesheet" href="https://YOUR-EDITOR-HOST/assets/index.css">
-        {%- endcomment -%}
-
         <div class="meme-composer__fallback">
-          <p class="memeup-bubble-meta">no editor loaded yet &mdash; plain add-to-cart works below</p>
-          {%- render 'buy-buttons',
-            product: product,
-            product_form_id: 'meme-composer-form',
-            section_id: section.id,
-            show_pickup_availability: false
-          -%}
+          {%- if has_editor -%}
+            <p class="memeup-bubble-meta">loading the meme editor&hellip;</p>
+          {%- else -%}
+            <p class="memeup-bubble-meta">no editor loaded yet &mdash; plain add-to-cart works below</p>
+            {%- render 'buy-buttons',
+              product: product,
+              product_form_id: 'meme-composer-form',
+              section_id: section.id,
+              show_pickup_availability: false
+            -%}
+          {%- endif -%}
         </div>
       </div>
     </div>
   </div>
 </div>
+
+{%- if has_editor -%}
+  {%- if section.settings.editor_css_url != blank -%}
+    <link rel="stylesheet" href="{{ section.settings.editor_css_url }}" crossorigin="anonymous">
+  {%- endif -%}
+  <script type="module" src="{{ section.settings.editor_js_url }}" crossorigin="anonymous"></script>
+{%- endif -%}
 
 {%- style -%}
   .section-{{ section.id }}-padding {
@@ -71,7 +107,7 @@
   }
 
   @media screen and (min-width: 750px) {
-    .meme-composer {
+    .meme-composer:not(.meme-composer--editor) {
       grid-template-columns: 1fr 1fr;
       align-items: start;
     }
@@ -90,14 +126,22 @@
     padding: 2.4rem;
   }
 
-  .meme-composer__root {
-    min-height: 12rem;
+  #create {
+    scroll-margin-top: 2rem;
+  }
+
+  .meme-composer__root:not(:empty) {
+    margin-top: 2rem;
   }
 
   .meme-composer__fallback {
     margin-top: 1.6rem;
     padding-top: 1.6rem;
     border-top: 1px dashed var(--memeup-border);
+  }
+
+  .meme-composer__root:not(:empty) ~ .meme-composer__fallback {
+    display: none;
   }
 {%- endstyle -%}
 
@@ -107,6 +151,25 @@
   "tag": "section",
   "class": "section",
   "settings": [
+    {
+      "type": "text",
+      "id": "editor_js_url",
+      "label": "Editor script URL",
+      "info": "apps/editor build from memeup-store, e.g. https://store.moncho.cloud/assets/editor.js. Leave empty to show the plain buy button.",
+      "default": "https://store.moncho.cloud/assets/editor.js"
+    },
+    {
+      "type": "text",
+      "id": "editor_css_url",
+      "label": "Editor stylesheet URL",
+      "default": "https://store.moncho.cloud/assets/editor.css"
+    },
+    {
+      "type": "textarea",
+      "id": "template_ids",
+      "label": "Meme templates offered",
+      "info": "Comma-separated memegen template ids (e.g. drake,doge,buzz). Each needs a high-res file on the API. Empty = all memegen templates."
+    },
     {
       "type": "color_scheme",
       "id": "color_scheme",

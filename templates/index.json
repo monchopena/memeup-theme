@@ -35,11 +35,16 @@
           }
         }
       },
-      "block_order": ["msg-1", "msg-2", "msg-3", "msg-4"],
+      "block_order": [
+        "msg-1",
+        "msg-2",
+        "msg-3",
+        "msg-4"
+      ],
       "settings": {
         "color_scheme": "scheme-1",
         "compose_text": "start your own meme…",
-        "compose_link": "shopify://collections/all"
+        "compose_link": ""
       }
     },
     "featured_collection": {
@@ -69,10 +74,23 @@
         "padding_top": 44,
         "padding_bottom": 60
       }
+    },
+    "meme_maker_cta": {
+      "type": "meme-maker-cta",
+      "settings": {
+        "eyebrow": "new · no design skills needed",
+        "heading": "make your own meme tee",
+        "text": "Your meme, your caption, printed on a real shirt and shipped to your door.",
+        "button_label": "Create your meme",
+        "color_scheme": "scheme-1",
+        "padding_top": 20,
+        "padding_bottom": 20
+      }
     }
   },
   "order": [
     "meme_chat_hero",
+    "meme_maker_cta",
     "featured_collection"
   ]
 }

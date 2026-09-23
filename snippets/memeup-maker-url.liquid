@@ -1,0 +1,29 @@
+{% comment %}
+  Outputs the URL of the personalize-your-own-meme page, anchored to the
+  editor (#create in sections/meme-composer.liquid).
+
+  Accepts:
+  - product: {Object} explicit product to link to (optional). When blank, the
+    first product using the `product.memeup-personalize` template is used.
+
+  Usage:
+  {%- capture maker_url -%}{% render 'memeup-maker-url', product: section.settings.product %}{%- endcapture -%}
+{% endcomment %}
+
+{%- liquid
+  assign maker = product
+  if maker == blank
+    for candidate in collections.all.products
+      if candidate.template_suffix == 'memeup-personalize'
+        assign maker = candidate
+        break
+      endif
+    endfor
+  endif
+
+  if maker != blank
+    echo maker.url | append: '#create'
+  else
+    echo routes.all_products_collection_url
+  endif
+-%}

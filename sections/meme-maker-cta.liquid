@@ -1,0 +1,105 @@
+{% comment %}
+  Homepage call-to-action into the personalize-your-own-meme flow: a big
+  neon-lit card whose button lands on the editor (product page #create).
+{% endcomment %}
+
+{%- capture maker_url -%}{% render 'memeup-maker-url', product: section.settings.product %}{%- endcapture -%}
+
+<div class="section-{{ section.id }}-padding color-{{ section.settings.color_scheme }} gradient">
+  <div class="page-width">
+    <a href="{{ maker_url | strip }}" class="memeup-maker-cta">
+      <span class="memeup-maker-cta__eyebrow">{{ section.settings.eyebrow | escape }}</span>
+      <span class="memeup-maker-cta__heading">{{ section.settings.heading | escape }}</span>
+      {%- if section.settings.text != blank -%}
+        <span class="memeup-maker-cta__text">{{ section.settings.text | escape }}</span>
+      {%- endif -%}
+      <ol class="memeup-maker-cta__steps">
+        <li><span>01</span> pick a meme</li>
+        <li><span>02</span> type your caption</li>
+        <li><span>03</span> we print &amp; ship it</li>
+      </ol>
+      <span class="memeup-maker-cta__button">
+        {{ section.settings.button_label | escape }}
+        <span aria-hidden="true">&rarr;</span>
+      </span>
+    </a>
+  </div>
+</div>
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top }}px;
+    padding-bottom: {{ section.settings.padding_bottom }}px;
+  }
+{%- endstyle -%}
+
+{% schema %}
+{
+  "name": "Make your own meme CTA",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Personalize product",
+      "info": "Leave empty to use the first product with the memeup-personalize template."
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "new · no design skills needed"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "make your own meme tee"
+    },
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Text",
+      "default": "Your meme, your caption, printed on a real shirt and shipped to your door."
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "Create your meme"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 20
+    }
+  ],
+  "presets": [
+    {
+      "name": "Make your own meme CTA"
+    }
+  ]
+}
+{% endschema %}

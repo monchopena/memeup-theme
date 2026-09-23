@@ -24,6 +24,13 @@
   --memeup-online: #3ddc59;
   --memeup-urgent: #ff5470;
 
+  /* Neon (logo + hover glows) */
+  --memeup-neon-core: #eaffb8;
+  --memeup-neon-glow: 0 0 2px #fff, 0 0 8px var(--memeup-accent), 0 0 22px var(--memeup-accent),
+    0 0 48px rgba(198, 255, 61, 0.55), 0 0 90px rgba(255, 84, 112, 0.35);
+  --memeup-neon-glow-hot: 0 0 2px #fff, 0 0 10px var(--memeup-accent), 0 0 30px var(--memeup-accent),
+    0 0 64px rgba(198, 255, 61, 0.7), 0 0 120px rgba(255, 84, 112, 0.5);
+
   /* Radii */
   --memeup-radius-bubble: 22px;
   --memeup-radius-bubble-sm: 14px;

@@ -88,6 +88,61 @@ select {
   font-family: var(--memeup-font-display);
 }
 
+/* ---------- Neon wordmark ---------- */
+
+/* Text logo, used while no logo image is uploaded: a lit neon sign. */
+.memeup-logo {
+  display: inline-block;
+  font-family: var(--memeup-font-display);
+  font-size: clamp(3.4rem, 2.4rem + 3vw, 6.4rem);
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--memeup-neon-core);
+  text-shadow: var(--memeup-neon-glow);
+  animation: memeup-neon-on 1.4s steps(1, end) 0.2s both;
+}
+
+.header__heading-link:hover .memeup-logo,
+.header__heading-link:focus-visible .memeup-logo {
+  color: #fff;
+  text-shadow: var(--memeup-neon-glow-hot);
+}
+
+/* Uploaded logo image: same glow, traced around its alpha shape. */
+.header__heading-logo {
+  filter: drop-shadow(0 0 4px var(--memeup-accent)) drop-shadow(0 0 18px rgba(198, 255, 61, 0.45));
+}
+
+/* Sign "switching on": two flickers, then steady. */
+@keyframes memeup-neon-on {
+  0%,
+  12%,
+  30% {
+    opacity: 0.25;
+    text-shadow: none;
+  }
+  8%,
+  22%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memeup-logo {
+    animation: none;
+  }
+}
+
+.button--primary:hover:not([disabled]),
+.product-form__submit:hover:not([disabled]) {
+  box-shadow: 0 0 0 1px var(--memeup-accent), 0 0 24px rgba(198, 255, 61, 0.45);
+}
+
+.card-wrapper:hover .card {
+  box-shadow: 0 0 0 1px rgba(198, 255, 61, 0.6), 0 0 28px rgba(198, 255, 61, 0.18);
+}
+
 #cart-icon-bubble .cart-count-bubble {
   background: var(--memeup-accent);
   color: var(--memeup-accent-ink);
@@ -451,4 +506,107 @@ button.button:hover:not([disabled]) {
 
 .footer {
   border-top: 1px solid var(--memeup-border);
+}
+
+/* ---------- Homepage: "make your own meme" CTA ---------- */
+
+.memeup-maker-cta {
+  display: grid;
+  justify-items: start;
+  gap: 1.6rem;
+  padding: clamp(3.2rem, 2rem + 4vw, 6.4rem);
+  border-radius: var(--memeup-radius-bubble);
+  border-bottom-right-radius: var(--memeup-radius-tail);
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(198, 255, 61, 0.14), transparent 55%),
+    radial-gradient(90% 120% at 0% 100%, rgba(255, 84, 112, 0.12), transparent 60%),
+    var(--memeup-bg-raised);
+  box-shadow: 0 0 0 1px rgba(198, 255, 61, 0.55), 0 0 36px rgba(198, 255, 61, 0.18);
+  color: var(--memeup-ink);
+  text-decoration: none;
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.memeup-maker-cta:hover,
+.memeup-maker-cta:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 2px var(--memeup-accent), 0 0 64px rgba(198, 255, 61, 0.35);
+  outline: none;
+}
+
+.memeup-maker-cta__eyebrow {
+  font-family: var(--memeup-font-mono);
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  color: var(--memeup-muted);
+}
+
+.memeup-maker-cta__heading {
+  font-family: var(--memeup-font-display);
+  font-size: clamp(4rem, 2.4rem + 5vw, 8.8rem);
+  line-height: 0.95;
+  max-width: 12ch;
+  color: var(--memeup-neon-core);
+  text-shadow: var(--memeup-neon-glow);
+}
+
+.memeup-maker-cta__text {
+  font-size: 1.8rem;
+  max-width: 44ch;
+  color: var(--memeup-ink);
+}
+
+.memeup-maker-cta__steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.memeup-maker-cta__steps li {
+  padding: 0.8rem 1.4rem;
+  border-radius: 999px;
+  background: var(--memeup-bubble-them-bg);
+  font-size: 1.4rem;
+}
+
+.memeup-maker-cta__steps span {
+  font-family: var(--memeup-font-mono);
+  color: var(--memeup-accent);
+  margin-right: 0.4rem;
+}
+
+.memeup-maker-cta__button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.8rem;
+  padding: 2rem 4rem;
+  border-radius: 999px;
+  background: var(--memeup-accent);
+  color: var(--memeup-accent-ink);
+  font-weight: 800;
+  font-size: clamp(1.8rem, 1.4rem + 1vw, 2.4rem);
+}
+
+.memeup-maker-cta:hover .memeup-maker-cta__button {
+  box-shadow: 0 0 28px rgba(198, 255, 61, 0.55);
+}
+
+@media screen and (max-width: 749px) {
+  .memeup-maker-cta__button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memeup-maker-cta,
+  .memeup-maker-cta:hover {
+    transition: none;
+    transform: none;
+  }
 }

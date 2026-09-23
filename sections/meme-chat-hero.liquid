@@ -44,7 +44,14 @@
 
   {%- if section.settings.compose_text != blank -%}
     <div class="meme-chat-hero__compose">
-      <a href="{{ section.settings.compose_link }}" class="memeup-compose-bar">
+      {%- capture compose_url -%}
+        {%- if section.settings.compose_link != blank -%}
+          {{ section.settings.compose_link }}
+        {%- else -%}
+          {%- render 'memeup-maker-url' -%}
+        {%- endif -%}
+      {%- endcapture -%}
+      <a href="{{ compose_url | strip }}" class="memeup-compose-bar">
         <span class="memeup-compose-bar__text">{{ section.settings.compose_text }}</span>
         <span class="memeup-compose-bar__send" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -78,7 +85,8 @@
     {
       "type": "url",
       "id": "compose_link",
-      "label": "Compose bar link"
+      "label": "Compose bar link",
+      "info": "Leave empty to open the make-your-own-meme editor."
     }
   ],
   "blocks": [

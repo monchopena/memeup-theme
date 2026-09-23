@@ -164,7 +164,12 @@ alternating speaker lanes, not a uniform grid.
 
 Flat-by-default surfaces (bubbles, cards) with one soft, offset shadow used
 specifically for "floating" elements: product cards and the sticky compose
-bar. No flat block shadows, no colored glow halos.
+bar. No flat block shadows.
+
+**Neon exception.** Acid-lime glow is reserved for the header wordmark (a lit
+neon sign, `--memeup-neon-glow`, flickers on once, static under reduced
+motion) and as a hover state on primary buttons and product cards. Nothing
+glows at rest except the logo.
 
 ### Shadow Vocabulary
 - **Card float** (`0 8px 24px rgba(0,0,0,0.2)`, via card_shadow settings):
