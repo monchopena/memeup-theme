@@ -2,10 +2,13 @@
   <meme-maker>: the personalize-your-own-meme-shirt generator
   (sections/meme-composer.liquid).
 
-  memegen supplies the template list and PREVIEW images only. "Add to cart"
-  asks the memeup API to render the real 300 DPI print file, then adds the
-  line to the Shopify cart with the properties the orders/create webhook
-  reads to send the order to Gelato.
+  Meme images live in this theme (scripts/add-meme). The live preview is drawn
+  here on a canvas with the SAME caption layout the API prints with
+  (memeup-store apps/api/src/render/print-renderer.ts: layoutCaption +
+  buildCaptionSvg), so what customers see is what gets printed. "Add to cart"
+  asks the API to render the real 300 DPI print file from the meme's
+  print-quality asset, then adds the line to the Shopify cart with the
+  properties the orders/create webhook reads to send the order to Gelato.
 */
 if (!customElements.get('meme-maker')) {
   // The API validates size/colour against these (packages/shared/src/design.ts).
@@ -16,57 +19,105 @@ if (!customElements.get('meme-maker')) {
     xl: 'XL', 'x-large': 'XL', 'extra large': 'XL',
     xxl: 'XXL', '2xl': 'XXL', 'xx-large': 'XXL',
   };
-  const PREVIEW_DEBOUNCE_MS = 350;
   const SEARCH_THRESHOLD = 12;
+  const CAPTION_FONT = 'Anton';
 
-  // memegen path-segment escaping, https://memegen.link/#special-characters
-  const encodeSegment = (text) => {
-    const t = text.trim();
-    if (!t) return '_';
-    return t
-      .replace(/_/g, '__')
-      .replace(/-/g, '--')
-      .replace(/ /g, '_')
-      .replace(/\?/g, '~q')
-      .replace(/&/g, '~a')
-      .replace(/%/g, '~p')
-      .replace(/#/g, '~h')
-      .replace(/\//g, '~s')
-      .replace(/\\/g, '~b')
-      .replace(/</g, '~l')
-      .replace(/>/g, '~g')
-      .replace(/"/g, "''");
-  };
+  // Port of the API's layoutCaption(): greedy wrap + shrink-to-fit using the
+  // same glyph-width approximation, so line breaks match the printed shirt.
+  function layoutCaption(text, boxWidth, maxHeight, { maxFontSize, minFontSize, maxLines }) {
+    const clean = text.trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!clean) return null;
+    const words = clean.split(' ');
+    const CHAR_W = 0.52;
+    const LINE_H = 1.12;
+
+    for (let fontSize = maxFontSize; fontSize >= minFontSize; fontSize -= 2) {
+      const maxChars = Math.max(1, Math.floor(boxWidth / (fontSize * CHAR_W)));
+      const lines = [];
+      let current = '';
+      for (const word of words) {
+        const candidate = current ? `${current} ${word}` : word;
+        if (candidate.length <= maxChars || !current) current = candidate;
+        else {
+          lines.push(current);
+          current = word;
+        }
+      }
+      if (current) lines.push(current);
+      const fits =
+        lines.length <= maxLines &&
+        lines.every((l) => l.length <= maxChars || l.split(' ').length === 1) &&
+        lines.length * fontSize * LINE_H <= maxHeight;
+      if (fits) return { lines, fontSize, lineHeight: fontSize * LINE_H };
+    }
+
+    const fontSize = minFontSize;
+    const maxChars = Math.max(1, Math.floor(boxWidth / (fontSize * CHAR_W)));
+    const lines = [];
+    for (let i = 0; i < clean.length && lines.length < maxLines; i += maxChars) {
+      lines.push(clean.slice(i, i + maxChars));
+    }
+    return { lines, fontSize, lineHeight: fontSize * LINE_H };
+  }
+
+  // Port of the API's buildCaptionSvg() geometry, drawn onto a canvas.
+  function drawMeme(ctx, image, width, height, topText, bottomText) {
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0, width, height);
+
+    const margin = Math.round(height * 0.04);
+    const maxFontSize = Math.round(width * 0.14);
+    const minFontSize = Math.max(12, Math.round(width * 0.035));
+    const strokeWidth = Math.max(2, Math.round(maxFontSize * 0.06));
+    const opts = { maxFontSize, minFontSize, maxLines: 3 };
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = strokeWidth;
+    ctx.strokeStyle = '#000';
+    ctx.fillStyle = '#fff';
+
+    const paint = (layout, firstBaseline) => {
+      ctx.font = `${layout.fontSize}px ${CAPTION_FONT}, Impact, sans-serif`;
+      let y = firstBaseline;
+      for (const line of layout.lines) {
+        // paint-order: stroke fill
+        ctx.strokeText(line, width / 2, y);
+        ctx.fillText(line, width / 2, y);
+        y += layout.lineHeight;
+      }
+    };
+
+    const top = layoutCaption(topText, width - margin * 2, height * 0.42, opts);
+    if (top) paint(top, margin + top.fontSize);
+    const bottom = layoutCaption(bottomText, width - margin * 2, height * 0.42, opts);
+    if (bottom) paint(bottom, height - margin - (bottom.lines.length - 1) * bottom.lineHeight);
+  }
 
   class MemeMaker extends HTMLElement {
     connectedCallback() {
-      this.memegen = (this.dataset.memegenUrl || '').replace(/\/+$/, '');
       this.api = (this.dataset.apiUrl || '').replace(/\/+$/, '');
-      this.allowed = (this.dataset.templates || '')
-        .split(',')
-        .map((id) => id.trim())
-        .filter(Boolean);
-      try {
-        this.variants = JSON.parse(this.dataset.variants || '[]');
-      } catch {
-        this.variants = [];
-      }
+      this.assetOrigin = this.dataset.assetOrigin || window.location.origin;
+      this.memes = this.parse(this.dataset.memes);
+      this.variants = this.parse(this.dataset.variants);
 
       this.grid = this.querySelector('[data-templates-grid]');
       this.search = this.querySelector('[data-search]');
       this.topInput = this.querySelector('[data-top]');
       this.bottomInput = this.querySelector('[data-bottom]');
-      this.preview = this.querySelector('[data-preview]');
+      this.canvas = this.querySelector('[data-preview]');
       this.placeholder = this.querySelector('[data-placeholder]');
       this.shirt = this.querySelector('[data-shirt]');
       this.submit = this.querySelector('[data-submit]');
       this.status = this.querySelector('[data-status]');
 
       this.template = null;
+      this.image = null;
       this.busy = false;
 
       const onText = () => {
-        this.schedulePreview();
+        this.draw();
         this.refresh();
       };
       this.topInput.addEventListener('input', onText);
@@ -75,54 +126,55 @@ if (!customElements.get('meme-maker')) {
       this.querySelectorAll('[data-option]').forEach((input) =>
         input.addEventListener('change', () => this.refresh())
       );
-      this.preview.addEventListener('load', () => this.shirt.classList.remove('is-loading'));
-      this.preview.addEventListener('error', () => this.shirt.classList.remove('is-loading'));
       this.submit.addEventListener('click', () => this.addToCart());
 
-      this.loadTemplates();
+      // Captions are drawn with Anton: redraw once it has loaded.
+      document.fonts?.load(`40px ${CAPTION_FONT}`).then(() => this.draw());
+
+      this.renderTemplates();
       this.refresh();
     }
 
-    async loadTemplates() {
+    parse(json) {
       try {
-        const res = await fetch(`${this.memegen}/templates/`);
-        if (!res.ok) throw new Error(`memegen ${res.status}`);
-        let list = await res.json();
-        if (this.allowed.length) {
-          const byId = new Map(list.map((t) => [t.id, t]));
-          list = this.allowed.map((id) => byId.get(id)).filter(Boolean);
-        }
-        this.renderTemplates(list);
-      } catch (err) {
-        console.error('meme-maker: could not load templates', err);
-        this.grid.innerHTML =
-          '<p class="meme-maker__status is-error">Memes are taking a nap. Refresh the page in a minute.</p>';
+        return JSON.parse(json || '[]');
+      } catch {
+        return [];
       }
     }
 
-    renderTemplates(list) {
+    absolute(url) {
+      return new URL(url, this.assetOrigin).href;
+    }
+
+    renderTemplates() {
       this.grid.textContent = '';
-      for (const t of list) {
+      if (!this.memes.length) {
+        this.grid.innerHTML =
+          '<p class="memeup-bubble-meta">no memes yet &mdash; add some with scripts/add-meme</p>';
+        return;
+      }
+      for (const meme of this.memes) {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'meme-maker__template';
-        button.dataset.id = t.id;
-        button.dataset.name = (t.name || t.id).toLowerCase();
+        button.dataset.id = meme.id;
+        button.dataset.name = meme.name.toLowerCase();
         button.setAttribute('aria-pressed', 'false');
-        button.title = t.name || t.id;
+        button.title = meme.name;
 
         const img = document.createElement('img');
-        img.src = `${this.memegen}/images/${encodeURIComponent(t.id)}.jpg?width=200`;
-        img.alt = t.name || t.id;
+        img.src = meme.thumb;
+        img.alt = meme.name;
         img.loading = 'lazy';
-        img.width = 100;
-        img.height = 100;
+        img.width = 120;
+        img.height = 120;
         button.append(img);
 
-        button.addEventListener('click', () => this.selectTemplate(t, button));
+        button.addEventListener('click', () => this.selectTemplate(meme, button));
         this.grid.append(button);
       }
-      this.search.hidden = list.length <= SEARCH_THRESHOLD;
+      this.search.hidden = this.memes.length <= SEARCH_THRESHOLD;
     }
 
     filterTemplates() {
@@ -132,38 +184,44 @@ if (!customElements.get('meme-maker')) {
       });
     }
 
-    selectTemplate(template, button) {
-      this.template = template;
+    selectTemplate(meme, button) {
+      this.template = meme;
       this.grid
         .querySelectorAll('.meme-maker__template')
         .forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-      this.updatePreview();
+
+      this.shirt.classList.add('is-loading');
+      const image = new Image();
+      image.onload = () => {
+        if (this.template !== meme) return; // a newer pick won
+        this.image = image;
+        this.shirt.classList.remove('is-loading');
+        this.draw();
+      };
+      image.onerror = () => {
+        this.shirt.classList.remove('is-loading');
+        this.setStatus("Couldn't load that meme. Try another one.", 'error');
+      };
+      image.src = meme.preview;
+
       this.refresh();
       if (!this.topInput.value && !this.bottomInput.value) this.topInput.focus({ preventScroll: true });
     }
 
-    schedulePreview() {
-      clearTimeout(this.previewTimer);
-      this.previewTimer = setTimeout(() => this.updatePreview(), PREVIEW_DEBOUNCE_MS);
-    }
-
-    updatePreview() {
-      if (!this.template) return;
-      const id = encodeURIComponent(this.template.id);
+    draw() {
+      if (!this.image || !this.template) return;
+      const width = this.image.naturalWidth;
+      const height = this.image.naturalHeight;
+      if (this.canvas.width !== width) this.canvas.width = width;
+      if (this.canvas.height !== height) this.canvas.height = height;
       const top = this.topInput.value;
       const bottom = this.bottomInput.value;
-      const path =
-        top.trim() || bottom.trim()
-          ? `/images/${id}/${encodeURIComponent(encodeSegment(top))}/${encodeURIComponent(encodeSegment(bottom))}.jpg`
-          : `/images/${id}.jpg`;
-      const src = `${this.memegen}${path}?width=700`;
-      if (this.preview.src === src) return;
-      this.shirt.classList.add('is-loading');
-      this.preview.src = src;
-      this.preview.alt = `Preview: ${this.template.name || this.template.id}${top ? `, "${top}"` : ''}${
-        bottom ? `, "${bottom}"` : ''
-      }`;
-      this.preview.hidden = false;
+      drawMeme(this.canvas.getContext('2d'), this.image, width, height, top, bottom);
+      this.canvas.setAttribute(
+        'aria-label',
+        `Preview: ${this.template.name}${top ? `, "${top}"` : ''}${bottom ? `, "${bottom}"` : ''}`
+      );
+      this.canvas.hidden = false;
       this.placeholder.hidden = true;
     }
 
@@ -219,11 +277,18 @@ if (!customElements.get('meme-maker')) {
       this.setStatus('');
 
       try {
-        // 1. Render the real print file.
+        // 1. Render the real print file from the meme's print-quality asset.
         const designRes = await fetch(`${this.api}/designs`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ templateId: this.template.id, topText, bottomText, size, color }),
+          body: JSON.stringify({
+            templateId: this.template.id,
+            templateUrl: this.absolute(this.template.print),
+            topText,
+            bottomText,
+            size,
+            color,
+          }),
         });
         const design = await designRes.json().catch(() => ({}));
         if (!designRes.ok || !design.printFileUrl) {

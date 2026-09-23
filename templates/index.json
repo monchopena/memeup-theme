@@ -1,52 +1,5 @@
 {
   "sections": {
-    "meme_chat_hero": {
-      "type": "meme-chat-hero",
-      "blocks": {
-        "msg-1": {
-          "type": "message",
-          "settings": {
-            "side": "them",
-            "text": "we just dropped 6 new shirts and they're all unhinged",
-            "meta": "read · 2m"
-          }
-        },
-        "msg-2": {
-          "type": "message",
-          "settings": {
-            "side": "you",
-            "text": "shut up and take my money",
-            "meta": "delivered"
-          }
-        },
-        "msg-3": {
-          "type": "message",
-          "settings": {
-            "side": "them",
-            "text": "or… you make your own. type a caption, we print it, you wear it.",
-            "meta": "read · just now"
-          }
-        },
-        "msg-4": {
-          "type": "typing",
-          "settings": {
-            "side": "you",
-            "label": "you are typing"
-          }
-        }
-      },
-      "block_order": [
-        "msg-1",
-        "msg-2",
-        "msg-3",
-        "msg-4"
-      ],
-      "settings": {
-        "color_scheme": "scheme-1",
-        "compose_text": "start your own meme…",
-        "compose_link": ""
-      }
-    },
     "featured_collection": {
       "type": "featured-collection",
       "settings": {
@@ -89,7 +42,6 @@
     }
   },
   "order": [
-    "meme_chat_hero",
     "meme_maker_cta",
     "featured_collection"
   ]

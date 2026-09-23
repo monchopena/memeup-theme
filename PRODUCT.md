@@ -42,8 +42,11 @@ else's finished design. Generic "funny shirt" competitors only offer path 1.
 - **The personalized product** uses the `product.memeup-personalize`
   template, whose "Meme maker" section (`sections/meme-composer.liquid` +
   `assets/meme-maker.js`) is the whole generator, built into this theme:
-  template picker, top/bottom captions, live memegen preview on a shirt
-  mock-up, size/colour from the product's own variants. "Add to cart" calls
+  template picker, top/bottom captions, live canvas preview on a shirt
+  mock-up (same caption layout as the print renderer), size/colour from the
+  product's own variants. Meme images live in this repo: `scripts/add-meme`
+  writes `assets/meme-<id>*` and regenerates `snippets/meme-list.liquid`; the
+  API downloads the print-quality asset from the shop CDN (`templateUrl`). "Add to cart" calls
   the sibling `memeup-store` API (`POST /designs`) to render the 300 DPI print
   file, then `/cart/add.js` with line-item properties (`templateId`,
   `topText`, `bottomText`, `printFileUrl`, `size`, `color`) that the API's

@@ -2,10 +2,15 @@
   Personalize-your-own-meme-shirt product page: the whole meme generator,
   built into the theme (assets/meme-maker.js + meme-maker.css).
 
-  Flow: pick a memegen template -> type top/bottom captions -> live preview
-  (memegen, preview quality only) -> pick size/colour -> "Add to cart":
-    1. POST {api_url}/designs renders the 300 DPI print file and returns its
-       public printFileUrl (memeup-store apps/api).
+  Memes live in this theme: scripts/add-meme writes assets/meme-<id>*.jpg|png
+  and regenerates snippets/meme-list.liquid (the list rendered below).
+
+  Flow: pick a meme -> type top/bottom captions -> live preview drawn in the
+  browser with the same caption layout as the print renderer -> pick
+  size/colour -> "Add to cart":
+    1. POST {api_url}/designs with templateUrl = the meme's print-quality asset
+       on the shop CDN; the memeup-store API renders the 300 DPI print file and
+       returns its public printFileUrl.
     2. POST /cart/add.js with line-item properties templateId, topText,
        bottomText, printFileUrl, size, color: the exact keys the API's
        orders/create webhook reads to send the order to Gelato.
@@ -43,14 +48,15 @@
   {%- endfor -%}
   ]
 {%- endcapture -%}
+{%- capture memes_json -%}{%- render 'meme-list' -%}{%- endcapture -%}
 
 <div class="section-{{ section.id }}-padding gradient color-{{ section.settings.color_scheme }}">
   <div class="page-width">
     <meme-maker
       class="meme-maker"
-      data-memegen-url="{{ section.settings.memegen_url | escape }}"
       data-api-url="{{ section.settings.api_url | escape }}"
-      data-templates="{{ section.settings.template_ids | escape }}"
+      data-asset-origin="https://{{ shop.domain }}"
+      data-memes="{{ memes_json | strip | escape }}"
       data-variants="{{ variants_json | strip | escape }}"
     >
       <div class="meme-maker__stage">
@@ -61,7 +67,7 @@
             data-shirt-color="{{ current.options[color_index] | downcase | escape }}"
           {% endif %}
         >
-          <img class="meme-maker__preview" data-preview alt="" width="700" height="700" hidden>
+          <canvas class="meme-maker__preview" data-preview role="img" aria-label="" hidden></canvas>
           <p class="meme-maker__placeholder" data-placeholder>pick a meme to start &rarr;</p>
         </div>
         <p class="memeup-bubble-meta">preview only &middot; your shirt is printed from a 300 dpi file</p>
@@ -165,21 +171,10 @@
   "class": "section",
   "settings": [
     {
-      "type": "textarea",
-      "id": "template_ids",
-      "label": "Memes offered",
-      "info": "Comma-separated memegen template ids, in display order (e.g. drake,doge,buzz). Each needs a high-res file on the API: check with `pnpm check-templates`. Empty = every memegen template."
-    },
-    {
-      "type": "text",
-      "id": "memegen_url",
-      "label": "Memegen URL (previews)",
-      "default": "https://store-memegen.moncho.cloud"
-    },
-    {
       "type": "text",
       "id": "api_url",
       "label": "memeup API URL (print files)",
+      "info": "Memes are managed with scripts/add-meme in the theme repo.",
       "default": "https://store-api.moncho.cloud"
     },
     {
