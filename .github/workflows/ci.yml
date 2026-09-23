@@ -3,6 +3,10 @@ on:
   pull_request:
   push:
     branches: [main]
+# theme-check-action reports results as a check run.
+permissions:
+  contents: read
+  checks: write
 jobs:
   theme-check:
     name: Theme Check
