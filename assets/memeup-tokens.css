@@ -31,6 +31,11 @@
   --memeup-neon-glow-hot: 0 0 2px #fff, 0 0 10px var(--memeup-accent), 0 0 30px var(--memeup-accent),
     0 0 64px rgba(198, 255, 61, 0.7), 0 0 120px rgba(255, 84, 112, 0.5);
 
+  /* Pink neon (make-your-own CTA heading) */
+  --memeup-neon-pink-core: #ffe0e6;
+  --memeup-neon-pink-glow: 0 0 2px #fff, 0 0 8px var(--memeup-urgent), 0 0 22px var(--memeup-urgent),
+    0 0 48px rgba(255, 84, 112, 0.6), 0 0 90px rgba(255, 84, 112, 0.35);
+
   /* Radii */
   --memeup-radius-bubble: 22px;
   --memeup-radius-bubble-sm: 14px;
